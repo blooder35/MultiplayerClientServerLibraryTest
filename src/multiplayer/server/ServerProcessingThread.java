@@ -5,6 +5,10 @@ import multiplayer.configuration.Configuration;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Поток, отвечающий за серверную обработку сообщений
+ * Подлежит реализации пользователем
+ */
 public abstract class ServerProcessingThread extends Thread {
 
     protected ServerProcessingThread(String name) {
@@ -20,7 +24,7 @@ public abstract class ServerProcessingThread extends Thread {
             prevCycleTime = System.currentTimeMillis() - startTime;
             startTime = System.currentTimeMillis();
             Map<Integer, List<String>> temp = Server.getInstance().getClientMessages();
-            processMessages(temp, prevCycleTime/1000f);
+            processMessages(temp, prevCycleTime / 1000f);
             delta = System.currentTimeMillis() - startTime;
             if (delta < Configuration.getInstance().getServerProcessingCycleTime()) {
                 try {
@@ -32,5 +36,11 @@ public abstract class ServerProcessingThread extends Thread {
         }
     }
 
+    /**
+     * Метод обработки сообщений сервером
+     *
+     * @param messages карта сообщений <Идентификатор клиента, Список сообщений>
+     * @param delta    время, прошедшее с момента предыдущей обработки
+     */
     protected abstract void processMessages(Map<Integer, List<String>> messages, float delta);
 }

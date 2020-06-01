@@ -33,7 +33,7 @@ public class ServerThread extends Thread {
                     newPlayerThread.start();
                 } else {
                     for (int i = 0; i < Configuration.getInstance().getMaximumAllowedClients(); i++) {
-                        if (!clients.get(i).isActive()) {
+                        if (clients.get(i) != null || !clients.get(i).isActive()) {
                             newPlayerThread.setClientIdentifier(i);
                             clients.set(i, newPlayerThread);
                             newPlayerThread.start();
@@ -43,18 +43,26 @@ public class ServerThread extends Thread {
                 }
 
             } catch (IOException e) {
-                //todo do nothing here just debug
-//                System.out.println("Server accept hanged out of time");
+                checkInactiveClients();
             }
         }
-        //todo check and delete
         System.out.println("SERVER STOPPED LISTENING FOR A NEW PLAYERS");
     }
 
+    /**
+     * Установить значение того, что сервер ожидает новых подключений
+     *
+     * @param listening true\false
+     */
     public void setListening(boolean listening) {
         this.listening.lazySet(listening);
     }
 
+    /**
+     * Получить список текущих клиентов сервера
+     *
+     * @return список потоков клиентов сервера
+     */
     public List<ServerClientThread> getClients() {
         return clients;
     }
@@ -66,5 +74,17 @@ public class ServerThread extends Thread {
             }
         }
         return false;
+    }
+
+    /**
+     * Метод проверки активности клиентов, замещающий неактивных клиентов с помощью пустого клиента
+     */
+    private void checkInactiveClients() {
+        for (int i = 0; i < clients.size(); i++) {
+            if (!clients.get(i).isActive()) {
+                clients.get(i).interrupt();
+                clients.set(i, new EmptyServerClientThread());
+            }
+        }
     }
 }

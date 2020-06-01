@@ -10,21 +10,23 @@ import java.io.PrintWriter;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.util.*;
-import java.util.concurrent.ConcurrentLinkedDeque;
-import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+/**
+ * Общий класс, отвечающий за получение и отправку сообщений при многопользовательском взаимодействии
+ */
 public class CommonMultiplayerThread extends Thread {
-    private Socket socket = null;
+    private Socket socket;
     private AtomicBoolean active;
     private Queue<String> messages;
     private PrintWriter out;
 
-    public CommonMultiplayerThread(Socket socket, String threadName) {
+    protected CommonMultiplayerThread(Socket socket, String threadName) {
         super(threadName);
         this.socket = socket;
         active = new AtomicBoolean(true);
-        messages = new ConcurrentLinkedDeque<>();
+        messages = new ConcurrentLinkedQueue<>();
         try {
             out = new PrintWriter(socket.getOutputStream(), true);
             this.socket.setSoTimeout(Configuration.getInstance().getSocketReadTimeout());
@@ -41,7 +43,7 @@ public class CommonMultiplayerThread extends Thread {
                     String clientMessage = CommunicationHelper.readMessage(in);
                     appendClientMessage(clientMessage);
                 } catch (SocketTimeoutException e) {
-//                    System.out.println(this.getClass() + " readingMessage");
+//              Ничего не выполняем, обработка прерывания при чтении не требуется
                 }
             }
         } catch (IOException e) {
@@ -50,38 +52,54 @@ public class CommonMultiplayerThread extends Thread {
         }
     }
 
+    /**
+     * @return признак того, является ли текущий поток активным
+     */
     public boolean isActive() {
         return active.get();
     }
 
+    /**
+     * Установить параметр активности, для потока
+     *
+     * @param active активен ли поток
+     */
     public void setActive(boolean active) {
         this.active.set(active);
     }
 
+    /**
+     * Синхронный метод получения сообщений.
+     * После получения списка сообщений, они удаляются из очереди
+     *
+     * @return список полученных сообщений.
+     */
     public synchronized List<String> getAndClearMessages() {
-        //todo нужно подумать над синхронизацией вызова к хранилищу сообщений
-        //todo remove trycatch
         List<String> tmp = new LinkedList<>();
-        try {
-            tmp.addAll(messages);
-        } catch (ArrayIndexOutOfBoundsException e) {
-            System.out.println("DEBUG");
+        for (int i = 0; i < messages.size(); i++) {
+            tmp.add(messages.remove());
         }
-        messages.clear();
         return tmp;
     }
 
+    /**
+     * Отправить сообщение
+     *
+     * @param message сообщение в виде строки
+     */
     public void sendMessage(String message) {
         out.print(message);
-        out.flush();
+        if (out.checkError()) {
+            active.set(false);
+        }
     }
 
     protected void appendClientMessage(String clientMessage) {
         if (messages.size() < Configuration.getInstance().getMaximumMessagesQueueLength()) {
-//            System.out.println(this.getName() + "Received message from user");
+            System.out.println(this.getName() + "Received message from user");
             messages.add(clientMessage);
         } else {
-            System.err.println(this.getName()+ "Error while adding client message to stack");
+            System.err.println(this.getName() + "Error while adding client message to stack");
         }
     }
 }

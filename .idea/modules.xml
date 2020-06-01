@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/MultiplayerClientServerLibrary.iml" filepath="$PROJECT_DIR$/MultiplayerClientServerLibrary.iml" />
+      <module fileurl="file://$PROJECT_DIR$/MultiplayerClientServerLibraryTest.iml" filepath="$PROJECT_DIR$/MultiplayerClientServerLibraryTest.iml" />
     </modules>
   </component>
 </project>
